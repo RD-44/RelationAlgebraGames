@@ -1,0 +1,8 @@
+;   e₀  e₁     a       b         c       d       e
+e₀  e₀   0     a       b         0       0       0
+e₁   0  e₁     0       0         c       d       e
+a    a   0  e₀+a       b         0       0       0
+b    b   0     b  e₀+a+b         0       0       0
+c    0   c     0       0  e₁+c+d+e   c+d+e     c+d
+d    0   d     0       0     c+d+e  e₁+c+e   c+d+e
+e    0   e     0       0       c+d   c+d+e  e₁+d+e
