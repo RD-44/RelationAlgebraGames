@@ -77,9 +77,28 @@ class Game:
                 self.network.add([0])
                 self.network.add([c, 0])
             else:
-                x = int(input(f"Enter a unit to label edge (0, 0): "))
+                allowed_units = set()
+                atoms = self.ra.table[c][self.ra.converse[c]]
+                for i in range(self.ra.num_units):
+                    if i in atoms : allowed_units.add(i)
+                self._output_atoms(allowed_units)
+                if len(allowed_units) > 1:
+                    x = int(input(f"Enter a unit to label edge (0, 0): "))
+                else:
+                    x = allowed_units.pop()
+                    print(f"Heloise picks {self.ra.tochar[x]} (forced).")
                 self.network.add([x])
-                x = int(input(f"Enter a unit to label edge (1, 1): "))
+
+                allowed_units.clear()
+                atoms = self.ra.table[self.ra.converse[c]][c]
+                for i in range(self.ra.num_units):
+                    if i in atoms : allowed_units.add(i)
+                self._output_atoms(allowed_units)
+                if len(allowed_units) > 1:
+                    x = int(input(f"Enter a unit to label edge (1, 1): "))
+                else:
+                    x = allowed_units.pop()
+                    print(f"Heloise picks {self.ra.tochar[x]} (forced).")
                 self.network.add([c, x])
         self.network.print()
 
@@ -105,6 +124,7 @@ class Game:
             i = 0
             if len(pairs) == 0:
                 print("Abalarde cannot make any good moves using nodes x and y. Next round.")
+                rounds += 1
                 continue
             elif len(pairs) == 1:
                 print("Only one move is possible here: ")
@@ -120,7 +140,25 @@ class Game:
             incoming = [-1 for _ in range(len(self.network.adj) + 1)]
             incoming[x] = a
             incoming[y] = self.ra.converse[b]
-            incoming[-1] = int(input("Heloise, pick a unit: ")) if self.ra.num_units > 1 else 0
+
+            if self.ra.num_units == 1:
+                incoming[-1] = 0
+            else:
+                allowed_units = set()
+                atoms = self.ra.table[self.ra.converse[a]][a] & self.ra.table[b][self.ra.converse[b]]
+                for i in range(self.ra.num_units):
+                    if i in atoms:
+                        allowed_units.add(i)
+                self._output_atoms(allowed_units)
+                if len(allowed_units) == 0:
+                    print("Heloise cannot label the self loop with a valid unit. Abalarde wins.")
+                    return rounds
+                if len(allowed_units) > 1:
+                    x = int(input(f"Heloise, pick a unit: "))
+                else:
+                    x = allowed_units.pop()
+                    print(f"Heloise picks {self.ra.tochar[x]} (forced).")
+                incoming[-1] = x
 
             for i in range(len(incoming)):
                 if incoming[i] != -1: continue
@@ -132,7 +170,7 @@ class Game:
                         if started:
                             allowed &= self.ra.table[self.network.adj[i][j]][incoming[j]]
                         else:
-                            allowed = self.ra.table[self.network.adj[i][j]][incoming[j]]
+                            allowed = self.ra.table[self.network.adj[i][j]][incoming[j]].copy()
                             started = True
                 for k in range(self.ra.num_units):
                     if k in allowed : allowed.remove(k)
@@ -141,7 +179,7 @@ class Game:
                 self._output_atoms(allowed)
                 if len(allowed) == 0:
                     print("Heloise cannot label this edge with a valid atom. Abalarde wins.")
-                    return
+                    return rounds
                 if len(allowed) == 1:
                     print("Only one possible atom to label this edge: ", end='')
                     incoming[i] = allowed.pop()
@@ -154,7 +192,7 @@ class Game:
             rounds += 1
             print("--------------------------------")
         
-with open("dumps/monk.pickle","rb") as f:
+with open("dumps/ra4.pickle","rb") as f:
     ra = pickle.load(f)
     
 game = Game(ra)
