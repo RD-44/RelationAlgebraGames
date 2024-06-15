@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import ras.relalg
 RA = ras.relalg.RA
-sys.modules['relalg'] = ras.relalg # allows pickle to recognise ra class
+sys.modules['relalg'] = ras.relalg # allows pickle to recognise the RA class
 from ras.randomRA import nextRA
 import pickle
 import pandas as pd
@@ -41,7 +41,7 @@ class Network:
         nx.draw_networkx_edge_labels(self.G, pos, edge_labels=self.edge_labels, font_color='black', label_pos=0.2)
         for node in self.G.nodes():
             x, y = pos[node]
-            plt.text(x, y + 0.1, f'{self.ra.tochar[self.adj[node][node]]}', fontsize=10, ha='center', va='center')
+            plt.text(x + 0.1, y + 0.1, f'{self.ra.tochar[self.adj[node][node]]}', fontsize=10, ha='center', va='center')
         plt.show(block=False)
 
 class Game:

@@ -1,0 +1,2 @@
+Number of associative algebras generated out of 100 random algebras, for 1 to 60 diversity atoms (Integral and only symmetric atoms)
+[100, 76, 28, 6, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 2, 3, 11, 8, 17, 18, 21, 22, 30, 33, 45, 56, 57, 65, 76, 69, 80, 82, 85, 86, 88, 93, 94, 93]

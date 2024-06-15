@@ -15,47 +15,51 @@ class RA:
         for l in legal:
             for triple in l:
                 self.table[triple[0]][triple[1]].add(converse[triple[2]])   
-        num_diversity = self.num_atoms - self.num_units
+        self.num_diversity = self.num_atoms - self.num_units
 
-        # represent atoms with conventional textual symbols
-        self.tochar = {}
-        subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-        for i in range (num_units):
-            self.tochar[i] = 'e' + str(i).translate(subscript)
-            i += 1
-        if num_units == 1:
-            self.tochar[0] = "1'"
-        for i in range(num_diversity):
-            if len(self.tochar) == self.num_atoms : break
-            d = i + num_units
-            if d not in self.tochar:
-                self.tochar[d] = chr(i+97)
-                if converse[d] != d:
-                    self.tochar[converse[d]] = self.tochar[d]+'~'
-            i += 1
-        
-        # associativity check
+        self._create_symbols()
+        self._check_associative()
+    
+    def _check_associative(self):
         for a in range(self.num_atoms): 
             for b in range(self.num_atoms):
                 ab = self.table[a][b]
                 for c in range(self.num_atoms):
-                    if not (a == b and b == c): 
-                        lhs = set()
-                        for x in ab: lhs.update(self.table[x][c])
-                        bc = self.table[b][c]
-                        rhs = set()
-                        for x in bc: 
-                            for r in self.table[a][x]:
-                                if r not in lhs:
-                                    self.non_associative_reason = "Not Associative as " + f"({self.tochar[a]};{self.tochar[b]});{self.tochar[c]} != {self.tochar[a]};({self.tochar[b]};{self.tochar[c]})"
-                                    self.associative = False
-                                    return
-                                rhs.add(r)
-                        if len(lhs) != len(rhs):
-                            self.non_associative_reason = "Not Associative as " + f"({self.tochar[a]};{self.tochar[b]});{self.tochar[c]} != {self.tochar[a]};({self.tochar[b]};{self.tochar[c]})"
-                            self.associative = False
-                            return 
+                    lhs = set()
+                    for x in ab: lhs.update(self.table[x][c])
+                    bc = self.table[b][c]
+                    rhs = set()
+                    for x in bc: 
+                        for r in self.table[a][x]:
+                            if r not in lhs:
+                                self.non_associative_reason = "Not Associative as " + f"({self.tochar[a]};{self.tochar[b]});{self.tochar[c]} != {self.tochar[a]};({self.tochar[b]};{self.tochar[c]})"
+                                self.associative = False
+                                return
+                            rhs.add(r)
+                    if len(lhs) != len(rhs):
+                        self.non_associative_reason = "Not Associative as " + f"({self.tochar[a]};{self.tochar[b]});{self.tochar[c]} != {self.tochar[a]};({self.tochar[b]};{self.tochar[c]})"
+                        self.associative = False
+                        return 
         self.associative = True
+
+
+    def _create_symbols(self):
+        # represent atoms with conventional textual symbols
+        self.tochar = {}
+        subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        for i in range (self.num_units):
+            self.tochar[i] = 'e' + str(i).translate(subscript)
+            i += 1
+        if self.num_units == 1:
+            self.tochar[0] = "1'"
+        for i in range(self.num_diversity):
+            if len(self.tochar) == self.num_atoms : break
+            d = i + self.num_units
+            if d not in self.tochar:
+                self.tochar[d] = chr(i+97)
+                if self.converse[d] != d:
+                    self.tochar[self.converse[d]] = self.tochar[d]+'~'
+            i += 1
 
     def supremum(self, atoms): # returns the sum of a set of atoms (supremum) as a string
         atoms = sorted(list(atoms))
