@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import random
 import numpy as np
 import itertools as it
@@ -18,7 +21,7 @@ def peircean(triple, converse): # returns a set of all peircean transforms of a 
 
 def generate(num_units, num_divs): # random RA generator
     num_atoms = num_units + num_divs 
-    num_converse_pairs = random.randint(0, num_divs//2)
+    num_converse_pairs = 0 #random.randint(0, num_divs//2)
     num_symmetric = num_divs - 2*num_converse_pairs
 
     isunit = lambda x : 0 <= x < num_units # predicate to check if number corresponds to unit
@@ -53,7 +56,7 @@ def generate(num_units, num_divs): # random RA generator
                 illegal.add((a, b, c))
             else:
                 legal.add(frozenset(peircean((a, b, c), converse)))
-        elif not isunit(b) and not isunit(c): # adds options for not illegal triples that don'tinvolving units
+        elif not isunit(b) and not isunit(c): # adds options for not illegal triples that don't involve units
             options.add(frozenset(peircean((a, b, c), converse)))
     
     for l in options: 

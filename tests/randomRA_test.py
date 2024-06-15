@@ -1,4 +1,9 @@
-from randRA import nextRA
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import ras.relalg
+sys.modules['relalg'] = ras.relalg
+from ras.randomRA import nextRA
 import unittest
 
 class TestRandom(unittest.TestCase):
