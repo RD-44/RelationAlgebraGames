@@ -1,0 +1,14 @@
+pyproject.toml
+src/data/__init__.py
+src/data/datacollection.py
+src/game/__init__.py
+src/game/engine.py
+src/game/training.py
+src/ras/__init__.py
+src/ras/randomRA.py
+src/ras/relalg.py
+src/ras/savera.py
+src/relation_algebra_games.egg-info/PKG-INFO
+src/relation_algebra_games.egg-info/SOURCES.txt
+src/relation_algebra_games.egg-info/dependency_links.txt
+src/relation_algebra_games.egg-info/top_level.txt

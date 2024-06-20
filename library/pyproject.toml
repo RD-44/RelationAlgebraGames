@@ -1,0 +1,9 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "relation-algebra-games"
+version = "1.0.0"
