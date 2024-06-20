@@ -5,7 +5,7 @@ class Game:
     def __init__(self, ra : RA) -> None:
         self.turn = True
         self.ra = ra
-        self.network = Network(ra)
+        self.network = Network(ra=ra, adj=[])
         self.rounds = 0
     
     def _output_atoms(self, atoms=None): # prints out atoms and numbers corresponding to them
@@ -38,11 +38,11 @@ class Game:
         c = int(input("Abelarde, choose an atom: "))
         if c < self.ra.num_units:
             print("\nHeloise moves (forced)")
-            self.network.add([c])
+            self.network = self.network.add([c])
         elif self.ra.num_units == 1:
             print("\nHeloise moves (forced)")
-            self.network.add([0])
-            self.network.add([c, 0])
+            self.network = self.network.add([0])
+            self.network = self.network.add([c, 0])
         else:
             allowed_units = self.ra.table[c][self.ra.converse[c]] & set(range(self.ra.num_units))
             self._output_atoms(allowed_units)
@@ -51,7 +51,7 @@ class Game:
             else:
                 x = allowed_units.pop()
                 print(f"Heloise picks {self.ra.tochar[x]} (forced).")
-            self.network.add([x])
+            self.network = self.network.add([x])
 
             allowed_units = self.ra.table[self.ra.converse[c]][c] & set(range(self.ra.num_units))
             self._output_atoms(allowed_units)
@@ -60,7 +60,7 @@ class Game:
             else:
                 x = allowed_units.pop()
                 print(f"Heloise picks {self.ra.tochar[x]} (forced).")
-            self.network.add([c, x])
+            self.network = self.network.add([c, x])
 
     def _get_abelarde_moves(self):
         moves = {}
@@ -159,7 +159,7 @@ class Game:
             else:
                 incoming[i] = int(input("Heloise, enter an atom: "))
 
-        self.network.add(incoming)
+        self.network = self.network.add(incoming)
         return False
 
     def play(self):

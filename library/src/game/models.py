@@ -1,9 +1,10 @@
 import enum
+from game.validators import validate_network, validate_game_state
 import networkx as nx
 from ras.relalg import RA
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+import itertools as it
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -21,22 +22,22 @@ class Move:
     before_state: "GameState"
     after_state: "GameState"
 
+@dataclass(frozen=True)
 class Network:
-    def __init__(self, ra : RA, adj=[]) -> None:
-        self.adj = adj
-        self.ra = ra
+    ra : RA
+    adj : list[list[int]]
+    
+    def _post_init__(self) -> None:
+        validate_network(self)
 
-    def add(self, incoming : list[int]):
+    def add(self, incoming : list[int]) -> "Network":
+        nextadj = self.adj.copy()
         n = len(incoming)-1
         outgoing = [self.ra.converse[a] for a in incoming]
-        self.adj.append(outgoing)
+        nextadj.append(outgoing)
         for i in range(n):
-            self.adj[i].append(incoming[i])
-    
-    def __str__(self):
-        df = pd.DataFrame(self.adj)
-        df.replace(to_replace=self.ra.tochar, inplace=True)
-        return str(df)
+            nextadj[i].append(incoming[i])
+        return Network(self.ra, nextadj)
     
     def display(self):
         n = len(self.adj)
@@ -53,7 +54,10 @@ class Network:
 class GameState:
     network : Network
     current_player : Character
-    need : tuple[int, int, int, int] | None 
+    need : tuple[int, int, int, int] | int | None = None
+
+    def __post_init__(self) -> None:
+        validate_game_state(self)
 
     @cached_property
     def winner(self) -> Character | None:
@@ -62,29 +66,78 @@ class GameState:
 
     @cached_property
     def possible_moves(self) -> list[Move]:
-        moves = []
         if self.current_player is Character.ABELARDE:
-            for x in range(len(self.network.adj)):
-                for y in range(len(self.network.adj)):
-                    a = self.network.adj[x][y]
-                    for b in range(self.network.ra.num_atoms):
-                        for c in range(self.network.ra.num_atoms):
-                            if a in self.network.ra.table[b][c]: # if a <= b;c
-                                valid = True
-                                for z in range(len(self.network.adj[x])):
-                                    if self.network.adj[x][z] == b and self.network.adj[z][y] == c:
-                                        valid = False # this means such a labelling exists, so not a valid move for abalarde
-                                        break
-                                if valid : moves.append(
-                                    Move(
-                                        character = Character.ABELARDE,
-                                        before_state=self,
-                                        after_state=GameState(self.network, self.current_player, (x, y, b, c))
-                                    )
-                                )
-            return moves
+            return self._possible_abelarde_moves
+        return self._possible_heloise_moves
+
+    @cached_property
+    def _possible_abelarde_moves(self) -> list[Move]:
+        moves = []
+        if len(self.network.adj) == 0:
+            for a in range(self.network.ra.num_atoms):
+                moves.append(
+                    Move(
+                        character=Character.ABELARDE,
+                        before_state = self,
+                        after_state=GameState(self.network, self.current_player.other, a)
+                    )
+                )
         else:
-            pass
+            for x, y in it.product(range(len(self.network.adj)), repeat=2):
+                a = self.network.adj[x][y]
+                for b, c in it.product(range(self.network.ra.num_atoms), repeat=2):
+                    if a in self.network.ra.table[b][c]: # if a <= b;c
+                        for z in range(len(self.network.adj[x])):
+                            # this means such a labelling exists, so not a valid move for abalarde
+                            if self.network.adj[x][z] == b and self.network.adj[z][y] == c: break # 
+                        else:
+                            moves.append(
+                                Move(
+                                    character = Character.ABELARDE,
+                                    before_state=self,
+                                    after_state=GameState(self.network, self.current_player.other, (x, y, b, c))
+                                )
+                            )
+        return moves
+    
+    @cached_property
+    def _possible_heloise_moves(self) -> list[Move]:
+        ra = self.network.ra
+        if len(self.network.adj) == 0:
+            if self.need < ra.num_units:
+                return [
+                    Move(
+                        character=Character.HELOISE,
+                        before_state=self,
+                        after_state=GameState(self.network.add([self.need]), self.current_player.other)
+                    )
+                ]
+            elif ra.num_units == 1:
+                return [
+                    Move(
+                        character=Character.HELOISE,
+                        before_state=self,
+                        after_state=GameState(self.network.add([0]).add([self.need, 0]), self.current_player.other)
+                    )
+                ]
+            else:
+                moves = []
+                allowed_units_lr = ra.table[self.need][ra.converse[self.need]] & set(range(ra.num_units))
+                allowed_units_rl = ra.table[ra.converse[self.need]][self.need] & set(range(ra.num_units))
+                for x in allowed_units_lr:
+                    for y in allowed_units_rl:
+                        moves.append(
+                            Move(
+                                character=Character.HELOISE,
+                                before_state=self,
+                                after_state=GameState(self.network.add([x]).add([self.need, y]))
+                            )
+                        )
+                return moves
+        else:
+            raise NotImplementedError()
+
+
 
 
 
