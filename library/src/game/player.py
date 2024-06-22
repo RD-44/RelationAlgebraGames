@@ -1,33 +1,39 @@
 import abc
+import time
+import random
 from game.exceptions import InvalidMove
-from game.models import Character, GameState, Move
+from game.models import GameState, AbelardeState, HeloiseState, Move, Character
 
-class AbelardePlayer(metaclass=abc.ABCMeta):
+
+class Player(metaclass=abc.ABCMeta):
+    def __init__(self, character : Character) -> None:
+        self.character = character
 
     def make_move(self, game_state: GameState) -> GameState:
-        if game_state.current_player is Character.ABELARDE:
-            if move := self.get_move(game_state): # getting the move is delegated to an abstract method - template method pattern
-                return move.after_state
-            raise InvalidMove("No more possible moves")
-        else:
-            raise InvalidMove("It is the other player's turn.")
+        if move := self.get_move(game_state): # getting the move is delegated to an abstract method - template method pattern
+            return move.after_state
+        raise InvalidMove("No more possible moves")
     
     @abc.abstractmethod
     def get_move(self, game_state: GameState) -> Move | None:
         """Return the current player's move in the given game state. """
 
-class HeloisePlayer(metaclass=abc.ABCMeta):
+class ComputerPlayer(Player, metaclass=abc.ABCMeta):
+    def __init__(self, character: Character, delay_seconds: float = 0.25) -> None:
+        super().__init__(character)
+        self.delay_seconds = delay_seconds
 
-    def make_move(self, game_state: GameState) -> GameState:
-        if game_state.current_player is Character.ABELARDE:
-            if move := self.get_move(game_state): # getting the move is delegated to an abstract method - template method pattern
-                return move.after_state
-            raise InvalidMove("No more possible moves")
-        else:
-            raise InvalidMove("It is the other player's turn.")
+    def get_move(self, game_state: GameState) -> Move | None:
+        time.sleep(self.delay_seconds)
+        return self.get_computer_move(game_state)
 
     @abc.abstractmethod
-    def get_move(self, game_state: GameState) -> Move | None:
-        """Return the current player's move in the given game state. """
+    def get_computer_move(self, game_state: GameState) -> Move | None:
+        """Return computer's move"""
 
-
+class RandomComputerPlayer(ComputerPlayer):
+    def get_computer_move(self, game_state: GameState) -> Move | None:
+        try:
+            return random.choice(game_state.possible_moves)
+        except IndexError:
+            return None
