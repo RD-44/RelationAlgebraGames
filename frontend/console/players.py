@@ -11,7 +11,7 @@ class ConsolePlayer(Player):
                 print("Please enter an integer.")
             else:
                 try:
-                    return game_state.possible_moves[index].after_state
+                    return game_state.possible_moves[index]
                 except InvalidMove:
                     print("Not a valid move.")
         return None

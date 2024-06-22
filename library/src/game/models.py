@@ -48,7 +48,6 @@ class Network:
         return Network(self.ra, nextadj)
     
     def display(self):
-        print(self.adj)
         n = len(self.adj)
         plt.clf()
         G = nx.from_numpy_array(np.triu(np.matrix(self.adj)), parallel_edges=True, create_using=nx.MultiDiGraph)
