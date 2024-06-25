@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 import abc 
 
+
 class Character(str, enum.Enum):
     ABELARDE = "Abelarde"
     HELOISE = "Heloise"
@@ -22,14 +23,6 @@ class Move:
     character : Character
     before_state: "GameState"
     after_state: "GameState"
-
-    def __str__(self):
-        if self.character is Character.ABELARDE:
-            return str(self.after_state.need)
-        return str(self.after_state.network.adj[-1])
-    
-    def __repr__(self) -> str:
-        return self.__str__()
 
 @dataclass(frozen=True)
 class Network:
@@ -47,7 +40,7 @@ class Network:
             nextadj[i].append(incoming[i])
         return Network(self.ra, nextadj)
     
-    def display(self):
+    def display(self, done=False):
         n = len(self.adj)
         plt.clf()
         G = nx.from_numpy_array(np.triu(np.matrix(self.adj)), parallel_edges=True, create_using=nx.MultiDiGraph)
@@ -57,7 +50,8 @@ class Network:
         pos = nx.circular_layout(G) if n != 2 else nx.spring_layout(G)
         nx.draw(G, pos, with_labels=True, node_size=700, font_weight='bold')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', label_pos=0.2)
-        plt.show(block=False)
+        if done : plt.show()
+        else : plt.show(block=False)
 
 def consistent(network : Network) -> bool:
     ra = network.ra

@@ -1,16 +1,17 @@
 import pickle
 import sys
-from game.models import Character, GameState, Network
-from game.player import RandomComputerPlayer
+from game.models import Character
+from game.player import MiniMaxPlayer, RandomPlayer
 import ras.relalg
 
 from console.players import ConsolePlayer
 from console.renderers import ConsoleRenderer
+
 sys.modules['relalg'] = ras.relalg
 
 from game.engine import RepresentationGame
 
-with open("dumps/monk.pickle","rb") as f:
+with open("dumps/monk.pickle", "rb") as f:
     ra = pickle.load(f)
 
 #  USE THIS AS BASIS FOR UNIT TESTS
@@ -28,6 +29,7 @@ with open("dumps/monk.pickle","rb") as f:
 # for move in h.possible_moves:
 #     print(move.after_state.network.adj)
 
-p1, p2 = ConsolePlayer(Character.ABELARDE), RandomComputerPlayer(Character.HELOISE, 2)
+p1, p2 = MiniMaxPlayer(Character.ABELARDE, delay_seconds=0.25), MiniMaxPlayer(Character.HELOISE, delay_seconds=0.25)
 renderer = ConsoleRenderer()
-winner = RepresentationGame(p1, p2, renderer, ra).play()
+winner = RepresentationGame(p1, p2, ra, renderer).play()
+print(winner)

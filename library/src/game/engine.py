@@ -1,34 +1,29 @@
-from game.exceptions import InvalidMove
 from game.player import Player
 from ras.relalg import RA
-from game.models import Character, GameState, Network, AbelardeState
+from game.models import Network, AbelardeState
 from dataclasses import dataclass
 from game.renderers import Renderer
+from game.validators import validate_game
 
 @dataclass(frozen=True)
 class RepresentationGame:
 
     player1 : Player
     player2 : Player
-    renderer : Renderer
     ra : RA
+    renderer : Renderer | None = None
     
     def __post_init__(self):
-        pass
+        validate_game(self)
 
     def play(self) -> None:
         game_state = AbelardeState(Network(self.ra))
-        print("Game has begun on the following relation algebra: \n", self.ra)
+        if self.renderer is not None : print("Game has begun on the following relation algebra: \n", self.ra, "\n ------------------\n")
         while True: 
-            self.renderer.renderAbelarde(game_state)
+            if self.renderer is not None : self.renderer.renderabelarde(game_state)
             if game_state.game_over: break
             game_state = self.player1.make_move(game_state)
-            self.renderer.renderHeloise(game_state)
+            if self.renderer is not None : self.renderer.renderheloise(game_state)
             if game_state.game_over: break
             game_state = self.player2.make_move(game_state)
-
-
-    def get_current_player(self, game_state : GameState):
-        if game_state.current_player is Character.ABELARDE:
-            return self.player1
-        return self.player2
+        return game_state.winner

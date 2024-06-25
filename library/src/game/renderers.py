@@ -1,12 +1,12 @@
 import abc
-from game.models import AbelardeState, GameState, HeloiseState
+from game.models import AbelardeState, HeloiseState
 
 class Renderer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def renderAbelarde(self, game_state : AbelardeState) -> None:
+    def renderabelarde(self, game_state : AbelardeState) -> None:
         """Render given game state."""
 
-    def renderHeloise(self, game_state : HeloiseState) -> None:
+    def renderheloise(self, game_state : HeloiseState) -> None:
         """Render given game state."""
 
 
