@@ -15,7 +15,7 @@ def peircean(triple, converse): # returns a set of all peircean transforms of a 
 
 def generate(num_units, num_divs): # random RA generator
     num_atoms = num_units + num_divs 
-    num_converse_pairs = 0 #random.randint(0, num_divs//2)
+    num_converse_pairs = random.randint(0, num_divs//2)
     num_symmetric = num_divs - 2*num_converse_pairs
 
     isunit = lambda x : 0 <= x < num_units # predicate to check if number corresponds to unit

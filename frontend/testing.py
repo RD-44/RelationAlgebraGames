@@ -11,7 +11,7 @@ sys.modules['relalg'] = ras.relalg
 
 from game.engine import RepresentationGame
 
-with open("dumps/monk.pickle", "rb") as f:
+with open("dumps/mckenzie.pickle", "rb") as f:
     ra = pickle.load(f)
 
 #  USE THIS AS BASIS FOR UNIT TESTS
@@ -29,7 +29,6 @@ with open("dumps/monk.pickle", "rb") as f:
 # for move in h.possible_moves:
 #     print(move.after_state.network.adj)
 
-p1, p2 = MiniMaxPlayer(Character.ABELARDE, delay_seconds=0.25), MiniMaxPlayer(Character.HELOISE, delay_seconds=0.25)
+p1, p2 = MiniMaxPlayer(Character.ABELARDE), RandomPlayer(Character.HELOISE)
 renderer = ConsoleRenderer()
 winner = RepresentationGame(p1, p2, ra, renderer).play()
-print(winner)
