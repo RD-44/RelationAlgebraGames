@@ -1,5 +1,5 @@
-from game.models import AbelardeState, HeloiseState
-from game.renderers import Renderer
+from repgame.models import AbelardeState, HeloiseState
+from repgame.renderers import Renderer
 
 class ConsoleRenderer(Renderer):
     def renderabelarde(self, game_state: AbelardeState) -> None:

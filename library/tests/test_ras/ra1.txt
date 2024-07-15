@@ -1,6 +1,6 @@
-;   1'     a     b
-1'  1'     a     b
-a    a  1'+b   a+b
-b    b   a+b  1'+a
-
-Monk Algebra Mon2
+;   1'       a      a~        c
+1'  1'       a      a~        c
+a    a    a~+c    1'+c   a+a~+c
+a~  a~    1'+c     a+c   a+a~+c
+c    c  a+a~+c  a+a~+c  1'+a+a~
+<1, 1, 1> 8 

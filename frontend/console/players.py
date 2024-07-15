@@ -1,5 +1,5 @@
-from game.models import GameState, Move
-from game.player import Player
+from repgame.models import GameState, Move
+from repgame.player import Player
 
 class ConsolePlayer(Player):
     def get_move(self, game_state: GameState) -> Move | None:

@@ -1,6 +1,28 @@
 import pandas as pd
 from functools import cached_property, lru_cache
 
+SUBSCRIPT = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+def create_symbols(num_units : int, num_diversity : int, converse : dict) -> dict:
+    num_atoms = num_units + num_diversity
+    tochar = {}
+    for i in range (num_units):
+        tochar[i] = 'e' + str(i).translate(SUBSCRIPT)
+        i += 1
+    if num_units == 1:
+        tochar[0] = "1'"
+    for i in range(num_diversity):
+        if len(tochar) == num_atoms : break
+        d = i + num_units
+        if d not in tochar:
+            tochar[d] = chr(i+97)
+            if converse[d] != d:
+                tochar[converse[d]] = tochar[d]+'~'
+        i += 1
+    
+    return tochar
+
+
 class RA:
     def __init__(self, num_symmetric : int, num_units : int, converse : dict[int], legal : set[frozenset[tuple[int, int, int]]]) -> None:
         self.num_symmetric = num_symmetric
@@ -13,7 +35,7 @@ class RA:
             for triple in l:
                 self.table[triple[0]][triple[1]].add(converse[triple[2]])   
         self.num_diversity = self.num_atoms - self.num_units
-        self._create_symbols()
+        self.tochar = create_symbols(self.num_units, self.num_diversity, converse)
        
     @cached_property
     def is_associative(self) -> bool:
@@ -33,24 +55,6 @@ class RA:
                     if len(lhs) != len(rhs):
                         return False
         return True
-
-    def _create_symbols(self) -> None:
-        # represent atoms with conventional textual symbols
-        self.tochar = {}
-        subscript = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-        for i in range (self.num_units):
-            self.tochar[i] = 'e' + str(i).translate(subscript)
-            i += 1
-        if self.num_units == 1:
-            self.tochar[0] = "1'"
-        for i in range(self.num_diversity):
-            if len(self.tochar) == self.num_atoms : break
-            d = i + self.num_units
-            if d not in self.tochar:
-                self.tochar[d] = chr(i+97)
-                if self.converse[d] != d:
-                    self.tochar[self.converse[d]] = self.tochar[d]+'~'
-            i += 1
 
     def supremum(self, atoms) -> str: # returns the sum of a set of atoms (supremum) as a string
         atoms = sorted(list(atoms))

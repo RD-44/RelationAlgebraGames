@@ -1,4 +1,7 @@
-;   1'   a     b
-1'  1'   a     b
-a    a  1'     b
-b    b   b  1'+a
+;   1'    a    a~        c
+1'  1'    a    a~        c
+a    a    a     1      a+c
+a~  a~    1    a~     a~+c
+c    c  a+c  a~+c  1'+a+a~
+
+mckenzie algebra

@@ -1,10 +1,10 @@
 import pickle
 import sys
-from game.models import AbelardeState, Character,Network
-from game.player import MiniMaxPlayer, RandomPlayer
+from repgame.models import AbelardeState, Character,Network
+from repgame.player import MiniMaxPlayer, RandomPlayer
 import ras.relalg
 sys.modules['relalg'] = ras.relalg
-from game.engine import RepresentationGame
+from repgame.engine import RepresentationGame
 import unittest
 
 class TestGame(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestGame(unittest.TestCase):
 
 class TestMiniMax(unittest.TestCase):
 
-    def test_both_minimax(self):
+    def test_both_minimax_heloise(self):
         for i in range(1, 4):
             with open(f"library/tests/test_ras/ra{i}.pickle","rb") as f:
                 ra = pickle.load(f)
@@ -44,15 +44,29 @@ class TestMiniMax(unittest.TestCase):
                 winner = RepresentationGame(p1, p2, ra).play()
                 self.assertTrue(winner is Character.HELOISE, msg=f'Failed on ra{i}')
 
-    def test_minimax_random(self):
+    def test_minimax_random_heloise(self):
         for i in range(1, 4):
             with open(f"library/tests/test_ras/ra{i}.pickle","rb") as f:
                     ra = pickle.load(f)
-                    game_state = AbelardeState(Network(ra))
                     p1, p2 = RandomPlayer(Character.ABELARDE, delay_seconds=0), MiniMaxPlayer(Character.HELOISE, 0)
                     winner = RepresentationGame(p1, p2, ra).play()
                     self.assertTrue(winner is Character.HELOISE, msg=f'Failed on ra{i}')
 
+    def test_both_minimax_abelarde(self):
+        for i in range(1, 2):
+            with open(f"library/tests/test_ras_notrra/ra{i}.pickle","rb") as f:
+                ra = pickle.load(f)
+                p1, p2 = MiniMaxPlayer(Character.ABELARDE, delay_seconds=0), MiniMaxPlayer(Character.HELOISE, 0)
+                winner = RepresentationGame(p1, p2, ra).play()
+                self.assertTrue(winner is Character.ABELARDE, msg=f'Failed on ra{i}')
+    
+    def test_minimax_random_abelarde(self):
+        for i in range(1, 2):
+            with open(f"library/tests/test_ras_notrra/ra{i}.pickle","rb") as f:
+                ra = pickle.load(f)
+                p1, p2 = MiniMaxPlayer(Character.ABELARDE, delay_seconds=0), RandomPlayer(Character.HELOISE, 0)
+                winner = RepresentationGame(p1, p2, ra).play()
+                self.assertTrue(winner is Character.ABELARDE, msg=f'Failed on ra{i}')
 
 if __name__ == '__main__':
     unittest.main()
