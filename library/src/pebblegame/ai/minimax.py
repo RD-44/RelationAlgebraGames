@@ -9,7 +9,7 @@ def find_best_move(game_state : GameState) -> Move | None:
     best_score = -math.inf
     alpha = -math.inf
     beta = math.inf
-    depth = 1 if maximiser is Character.ABELARDE else 2
+    depth = 1
     for move in game_state.possible_moves:
         score = minimax(move, maximiser, alpha, beta, depth-1)
         alpha = max(alpha, score)
@@ -43,7 +43,7 @@ def evaluate_score(game_state: GameState, maximiser: Character):
     if not game_state.game_over:
         # heuristic
         #print("Heuristic Evaluated at: ", game_state.current_player.value)
-        score = heloise_moves(game_state, maximiser)
+        score = 0
         #print(score)
         return score
     elif game_state.winner is maximiser:
@@ -70,15 +70,3 @@ def freqs_squared(game_state : GameState, maximiser : Character):
         score = -score
     #print(score)
     return score
-
-def num_moves(game_state : GameState, maximiser : Character):
-    n = len(game_state.possible_moves)
-    if game_state.current_player is maximiser:
-        return n
-    return -n
-
-def heloise_moves(game_state : GameState, maximiser : Character):
-    # here we assume that the heuristic is calcululated when it is heloise's turn
-    if maximiser is Character.HELOISE:
-        return len(game_state.possible_moves)
-    return -len(game_state.possible_moves)

@@ -1,9 +1,9 @@
 import abc
 import time
 import random
-from repgame.ai.minimax import find_best_move
-from repgame.exceptions import InvalidMove
-from repgame.models import GameState, Move, Character
+from pebblegame.ai.minimax import find_best_move
+from pebblegame.exceptions import InvalidMove
+from pebblegame.models import GameState, Move, Character
 
 
 class Player(metaclass=abc.ABCMeta):

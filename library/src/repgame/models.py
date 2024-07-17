@@ -51,14 +51,15 @@ class Network:
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', label_pos=0.2)
         if done : plt.show()
         else : plt.show(block=False)
+    
+    @cached_property
+    def consistent(self) -> bool:
+        if not self.adj[-1][-1] < self.ra.num_units : return False
+        for i, j, k in it.product(range(len(self.adj)), repeat=3):
+            a, b, c = self.adj[i][j], self.adj[j][k], self.adj[i][k]
+            if c not in self.ra.table[a][b] : return False
+        return True
 
-def consistent(network : Network) -> bool:
-    ra = network.ra
-    if not network.adj[-1][-1] < ra.num_units : return False
-    for i, j, k in it.product(range(len(network.adj)), repeat=3):
-        a, b, c = network.adj[i][j], network.adj[j][k], network.adj[i][k]
-        if c not in ra.table[a][b] : return False
-    return True
 
 @dataclass(frozen=True)
 class GameState(metaclass=abc.ABCMeta):
@@ -108,7 +109,7 @@ class HeloiseState(GameState):
                 incoming.append(ra.converse[b])
                 incoming[y], incoming[-1] = incoming[-1], incoming[y]
             potential_move = self.network.add(incoming)
-            if consistent(potential_move):
+            if potential_move.consistent:
                 moves.append(
                     Move(
                         character=Character.HELOISE,

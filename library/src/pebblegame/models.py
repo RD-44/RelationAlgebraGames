@@ -1,13 +1,16 @@
 import enum
-from pebblegame.validators import validate_network, validate_heloise_state
 import networkx as nx
 from ras.relalg import RA
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools as it
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
+from pebblegame.exceptions import InvalidNetwork
 import abc 
+
+abelardeCache = {}
+heloiseCache = {}
 
 class Character(str, enum.Enum):
     ABELARDE = "Abelarde"
@@ -23,44 +26,45 @@ class Move:
     before_state: "GameState"
     after_state: "GameState"
 
-@dataclass(frozen=True)
 class Network:
-
-    # TODO: Have the adjacency matrix fixed size, and the add method renames the edges in place
-    ra : RA
-    adj : list[list[int]] = field(default_factory=lambda: [])
     
-    def _post_init__(self) -> None:
-        validate_network(self)
+    def __init__(self, ra : RA, n : int, adj=[]) -> None:
+        self.ra = ra
+        self.adj = adj if adj else [[0 for _ in range(n)] for _ in range(n)]
 
-    def add(self, incoming : list[int]) -> "Network":
-        nextadj = [row[:] for row in self.adj]
-        outgoing = [self.ra.converse[a] for a in incoming]
-        nextadj.append(outgoing)
-        for i in range(len(incoming)-1):
-            nextadj[i].append(incoming[i])
-        return Network(self.ra, nextadj)
+    def add(self, node : int, incoming : list[int]) -> "Network":
+        if len(incoming) != (n:=len(self.adj)): 
+            raise InvalidNetwork("Length of incoming list is not", n)
+        nextadj = [arr[:] for arr in self.adj]
+        for i in range(n):
+            nextadj[i][node] = incoming[i]
+            nextadj[node][i] = self.ra.converse[incoming[i]] if incoming[i] >= 0 else -1
+        return Network(self.ra, n, nextadj)
+    
+    @cached_property
+    def consistent(self) -> bool:
+        for i in range(len(self.adj)):
+            if self.adj[i][i] >= self.ra.num_units : return False
+        for i, j, k in it.product(range(len(self.adj)), repeat=3):
+            a, b, c = self.adj[i][j], self.adj[j][k], self.adj[i][k]
+            if a == -1 or b == -1 or c == -1 : continue
+            if c not in self.ra.table[a][b] : return False
+        return True
     
     def display(self, done=False):
         n = len(self.adj)
         plt.clf()
         G = nx.from_numpy_array(np.triu(np.matrix(self.adj)), parallel_edges=True, create_using=nx.MultiDiGraph)
-        for node in G.nodes(): 
-            if self.adj[node][node] == 0: G.add_edge(node, node)
+        for i, j in it.product(G.nodes(), repeat=2): 
+            if self.adj[i][j] != -1: G.add_edge(i, j)
         edge_labels = {(u, v) : f'{self.ra.tochar[self.adj[u][v]]}' for u, v in G.edges()}
         pos = nx.circular_layout(G) if n != 2 else nx.spring_layout(G)
         nx.draw(G, pos, with_labels=True, node_size=700, font_weight='bold')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', label_pos=0.2)
-        if done : plt.show()
-        else : plt.show(block=False)
-
-def consistent(network : Network) -> bool:
-    ra = network.ra
-    if not network.adj[-1][-1] < ra.num_units : return False
-    for i, j, k in it.product(range(len(network.adj)), repeat=3):
-        a, b, c = network.adj[i][j], network.adj[j][k], network.adj[i][k]
-        if c not in ra.table[a][b] : return False
-    return True
+        if done: 
+            plt.show()
+        else: 
+            plt.show(block=False)
 
 @dataclass(frozen=True)
 class GameState(metaclass=abc.ABCMeta):
@@ -70,10 +74,9 @@ class GameState(metaclass=abc.ABCMeta):
     def game_over(self) -> bool:
         return self.winner is not None
 
-    @cached_property
+    @abc.abstractmethod
     def winner(self) -> Character | None:
-        if len(self.possible_moves) == 0:
-            return self.current_player.other
+        """Get winner of current round if there is a winner"""
 
     @abc.abstractmethod
     def possible_moves(self) -> list[Move]:
@@ -84,81 +87,17 @@ class GameState(metaclass=abc.ABCMeta):
         """Return current player"""
 
 @dataclass(frozen=True)
-class HeloiseState(GameState):
-    need : tuple[int, int, int, int] | int 
-
-    def __post_init__(self) -> None:
-        validate_heloise_state(self)
-
-    @cached_property
-    def current_player(self) -> Character:
-        return Character.HELOISE
-
-    @cached_property
-    def possible_moves(self) -> list[Move]:
-        if len(self.network.adj) == 0: return self._first_round_moves
-        ra = self.network.ra
-        n = len(self.network.adj) + 1
-        moves = []
-        x, y, a, b = self.need     
-        permutations = it.product(range(ra.num_atoms), repeat=n-2 if x != y else n-1) 
-        for perm in permutations:
-            incoming = list(perm)
-            incoming.append(a)
-            incoming[x], incoming[-1] = incoming[-1], incoming[x]
-            if x != y:
-                incoming.append(ra.converse[b])
-                incoming[y], incoming[-1] = incoming[-1], incoming[y]
-            potential_move = self.network.add(incoming)
-            if consistent(potential_move):
-                moves.append(
-                    Move(
-                        character=Character.HELOISE,
-                        before_state=self,
-                        after_state=AbelardeState(potential_move)
-                    )
-                )
-        return moves
-
-    @cached_property
-    def _first_round_moves(self) -> list[Move]:
-        ra = self.network.ra
-        if self.need < ra.num_units:
-            return [
-                Move(
-                    character=Character.HELOISE,
-                    before_state=self,
-                    after_state=AbelardeState(self.network.add([self.need]))
-                )
-            ]
-        elif ra.num_units == 1:
-            return [
-                Move(
-                    character=Character.HELOISE,
-                    before_state=self,
-                    after_state=AbelardeState(self.network.add([0]).add([self.need, 0]))
-                )
-            ]
-        else:
-            moves = []
-            allowed_units_lr = ra.table[self.need][ra.converse[self.need]] & set(range(ra.num_units))
-            allowed_units_rl = ra.table[ra.converse[self.need]][self.need] & set(range(ra.num_units))
-            for x in allowed_units_lr:
-                for y in allowed_units_rl:
-                    moves.append(
-                        Move(
-                            character=Character.HELOISE,
-                            before_state=self,
-                            after_state=AbelardeState(self.network.add([x]).add([self.need, y]))
-                        )
-                    )
-            return moves
-
-@dataclass(frozen=True)       
 class AbelardeState(GameState):
+
+    valid : bool = True
 
     def _post_init__(self) -> None:
         pass
+    
+    @cached_property
+    def winner(self) -> Character | None:
+        if not self.network.consistent or not self.valid:
+            return self.current_player
 
     @cached_property
     def current_player(self) -> Character:
@@ -166,39 +105,74 @@ class AbelardeState(GameState):
 
     @cached_property
     def possible_moves(self) -> list[Move]:
-        if len(self.network.adj) == 0: return self._first_round_moves
+        n = len(self.network.adj)
         moves = []
-        for x, y in it.product(range(len(self.network.adj)), repeat=2):
-            if x > y : continue
-            a = self.network.adj[x][y]
-            for b, c in it.product(range(self.network.ra.num_atoms), repeat=2):
-                if a in self.network.ra.table[b][c]: # if a <= b;c
-                    for z in range(len(self.network.adj[x])):
-                        # this means such a labelling exists, so not a valid move for abalarde
-                        if self.network.adj[x][z] == b and self.network.adj[z][y] == c: break # 
-                    else:
-                        moves.append(
-                            Move(
-                                character = Character.ABELARDE,
-                                before_state=self,
-                                after_state=HeloiseState(self.network, (x, y, b, c))
-                            )
-                        )
+        if n not in abelardeCache:
+            abelardeCache[n] = []
+            for x, y, z in it.product(range(n), repeat=3):
+                if y == z or x == z : continue
+                for a, b in it.product(range(self.network.ra.num_atoms), repeat=2):
+                    abelardeCache[n].append((x, y, z, a, b))
+
+        for x, y, z, a, b in abelardeCache[n]:
+            incoming = [-1 for _ in range(n)]
+            incoming[x] = a
+            incoming[y] = self.network.ra.converse[b]
+            moves.append(
+                Move(
+                    character=Character.ABELARDE,
+                    before_state=self,
+                    after_state=HeloiseState(self.network.add(z, incoming), x, y, z)
+                )
+            )
         return moves
 
+@dataclass(frozen=True)
+class HeloiseState(GameState):
+    
+    x : int
+    y : int
+    z : int
+
     @cached_property
-    def _first_round_moves(self) -> list[Move]:
-        return [
-            Move(
-                character=Character.ABELARDE,
-                before_state = self,
-                after_state=HeloiseState(self.network, atom)
+    def winner(self) -> Character | None:
+        if not self.network.consistent:
+            return self.current_player
+    
+    @cached_property
+    def current_player(self) -> Character:
+        return Character.HELOISE
+
+    @cached_property
+    def game_over(self) -> bool:
+        return self.winner is not None
+
+    @cached_property
+    def possible_moves(self) -> list[Move]:
+        n = len(self.network.adj)
+        moves = []
+        if n not in heloiseCache:
+            permutations = it.product(range(self.network.ra.num_atoms), repeat = n-1)
+            heloiseCache[n] = []
+            for perm in permutations:
+                for i in range(self.network.ra.num_units):
+                    arr = list(perm)
+                    arr.append(i)
+                    heloiseCache[n].append(arr)
+        
+        a, b = self.network.adj[self.x][self.z], self.network.adj[self.z][self.y]
+        for incoming in heloiseCache[n]:
+            col = incoming.copy()
+            col[-1], col[self.z] = col[self.z], col[-1] # bring identity atom to the label connecting z to itself
+            next_network = self.network.add(self.z, col)
+            moves.append(
+                Move(
+                    character=Character.HELOISE,
+                    before_state=self,
+                    after_state=AbelardeState(next_network, a == next_network.adj[self.x][self.z] and b == next_network.adj[self.z][self.y])
+                )
             )
-            for atom in range(self.network.ra.num_atoms)
-        ]
-
-
-
+        return moves
 
 
 

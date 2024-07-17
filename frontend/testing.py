@@ -3,19 +3,19 @@ import sys
 from repgame.models import Character
 from repgame.player import MiniMaxPlayer, RandomPlayer
 import ras.relalg
-
-from console.players import ConsolePlayer
-from console.renderers import ConsoleRenderer
-
 sys.modules['relalg'] = ras.relalg
-
+from frontend.repgameconsole.players import ConsolePlayer
+from repgameconsole.renderers import ConsoleRenderer
 from repgame.engine import RepresentationGame
 
 with open("library/tests/test_ras/ra4.pickle", "rb") as f:
     ra = pickle.load(f)
 
+# FOR TESTING:
+from pebblegame.models import Network
+
 #  USE THIS AS BASIS FOR UNIT TESTS
-# moves = game_state.possibl_moves
+# moves = game_state.possible_moves
 
 # g2 = moves[0].after_state
 
@@ -32,3 +32,7 @@ with open("library/tests/test_ras/ra4.pickle", "rb") as f:
 p1, p2 = MiniMaxPlayer(Character.ABELARDE), MiniMaxPlayer(Character.HELOISE)
 renderer = ConsoleRenderer()
 winner = RepresentationGame(p1, p2, ra, renderer).play()
+
+# test = Network(ra, 4)
+# print(consistent(test))
+# test.display(True)

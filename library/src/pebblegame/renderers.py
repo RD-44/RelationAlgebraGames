@@ -1,5 +1,5 @@
 import abc
-from repgame.models import AbelardeState, HeloiseState
+from pebblegame.models import AbelardeState, HeloiseState
 
 class Renderer(metaclass=abc.ABCMeta):
     @abc.abstractmethod

@@ -43,7 +43,3 @@ class ConsoleRenderer(Renderer):
                 for i in range(n):
                     print(f"Edge {i}->{n-1}: {game_state.network.ra.tochar[row[i]]}")
                 print('\n')
-
-
-def clear_screen() -> None:
-    print('\033c')
