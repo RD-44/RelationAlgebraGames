@@ -42,15 +42,18 @@ class Network:
     def display(self, done=False):
         n = len(self.adj)
         plt.clf()
-        G = nx.from_numpy_array(np.triu(np.matrix(self.adj)), parallel_edges=True, create_using=nx.MultiDiGraph)
+        G = nx.from_numpy_array(np.matrix(self.adj), parallel_edges=True, create_using=nx.MultiDiGraph)
         for node in G.nodes(): 
-            if self.adj[node][node] == 0: G.add_edge(node, node)
-        edge_labels = {(u, v) : f'{self.ra.tochar[self.adj[u][v]]}' for u, v in G.edges()}
-        pos = nx.circular_layout(G) if n != 2 else nx.spring_layout(G)
+            if self.adj[node][node] == 0 : G.add_edge(node, node)
+        edge_labels_nonsymmetric = {(u, v) : f'{self.ra.tochar[self.adj[u][v]]}' for u, v in G.edges() if self.ra.converse[self.adj[u][v]] != self.adj[u][v]}
+        edge_labels_symmetric = {(u, v) : f'{self.ra.tochar[self.adj[u][v]]}' for u, v in G.edges() if self.ra.converse[self.adj[u][v]] == self.adj[u][v] and u >= v}
+        # circular layout does not display identity atoms for n = 2, this is a workaround
+        pos = nx.circular_layout(G) if n != 2 else nx.spring_layout(G) 
         nx.draw(G, pos, with_labels=True, node_size=700, font_weight='bold')
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', label_pos=0.2)
-        if done : plt.show()
-        else : plt.show(block=False)
+        # label symmetric atoms only once on an edge
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_nonsymmetric, font_color='black', label_pos=0.2)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_symmetric, font_color='black')
+        plt.show(block=done) # if game is over then block 
     
     @cached_property
     def consistent(self) -> bool:
