@@ -29,7 +29,7 @@ from pebblegame.models import Network
 # for move in h.possible_moves:
 #     print(move.after_state.network.adj)
 
-p1, p2 = ConsolePlayer(Character.ABELARDE), MiniMaxPlayer(Character.HELOISE)
+p1, p2 = MiniMaxPlayer(Character.ABELARDE, 1), MiniMaxPlayer(Character.HELOISE, 1)
 renderer = ConsoleRenderer()
 winner = RepresentationGame(p1, p2, ra, renderer).play()
 

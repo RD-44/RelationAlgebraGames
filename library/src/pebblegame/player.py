@@ -1,9 +1,12 @@
 import abc
 import time
 import random
-from pebblegame.ai.minimax import find_best_move
-from pebblegame.exceptions import InvalidMove
+from typing import TYPE_CHECKING
+import numpy as np
 from pebblegame.models import GameState, Move, Character
+from ras.relalg import RA
+from pebblegame.exceptions import InvalidMove
+    
 
 
 class Player(metaclass=abc.ABCMeta):
@@ -44,4 +47,18 @@ class RandomPlayer(ComputerPlayer):
 
 class MiniMaxPlayer(ComputerPlayer):
     def get_computer_move(self, game_state: GameState) -> Move | None:
+        from pebblegame.minimax import find_best_move
         return find_best_move(game_state)
+
+class DQNPlayer(ComputerPlayer):
+    """Player that learns using deep q learning
+    may need to reward differently based on player
+    consider having a reward attribute"""
+    
+    def __init__(self, character: Character, ra : RA, n : int, delay_seconds: float = 0.25) -> None:
+        from pebblegame.dqn.agents import AbelardeAgent
+        super().__init__(character, delay_seconds)
+        self.agent = AbelardeAgent(ra, n)
+
+    def get_computer_move(self, game_state: GameState) -> Move | None:
+        return game_state.possible_moves[np.argmax(self.agent.get_action(np.ravel(game_state.network.adj), True))]

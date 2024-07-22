@@ -53,7 +53,9 @@ class Network:
         # label symmetric atoms only once on an edge
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_nonsymmetric, font_color='black', label_pos=0.2)
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_symmetric, font_color='black')
-        plt.show(block=done) # if game is over then block 
+        plt.draw()
+        plt.pause(0.01)
+        if done: plt.show(block=True)
     
     @cached_property
     def consistent(self) -> bool:

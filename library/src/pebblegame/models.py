@@ -32,14 +32,14 @@ class Move:
 
 class Network:
     
-    def __init__(self, ra : RA, n : int, adj=[]) -> None:
+    def __init__(self, ra : RA, n : int, adj=None) -> None:
         self.ra = ra
-        self.adj = adj if adj else [[0 for _ in range(n)] for _ in range(n)]
+        self.adj = np.zeros((n, n), dtype=int) if adj is None else adj
 
     def add(self, node : int, incoming : list[int]) -> "Network":
         if len(incoming) != (n:=len(self.adj)): 
             raise InvalidNetwork("Length of incoming list is not", n)
-        nextadj = [arr[:] for arr in self.adj]
+        nextadj = np.array(self.adj)
         for i in range(n):
             nextadj[i][node] = incoming[i]
             nextadj[node][i] = self.ra.converse[incoming[i]] if incoming[i] >= 0 else -1
@@ -58,7 +58,7 @@ class Network:
     def display(self, done=False):
         n = len(self.adj)
         plt.clf()
-        G = nx.from_numpy_array(np.matrix(self.adj), create_using=nx.MultiDiGraph)
+        G = nx.from_numpy_array(self.adj, create_using=nx.MultiDiGraph)
         for i, j in it.product(G.nodes(), repeat=2): 
             if self.adj[i][j] == 0: G.add_edge(i, j)
         edge_labels_nonsymmetric = {(u, v) : f'{self.ra.tochar[self.adj[u][v]]}' for u, v in G.edges() if self.adj[u][v] != -1 and self.ra.converse[self.adj[u][v]] != self.adj[u][v]}
@@ -69,7 +69,9 @@ class Network:
         # label symmetric atoms only once on an edge
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_nonsymmetric, font_color='black', label_pos=0.8)
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels_symmetric, font_color='black')
-        plt.show(block=done) # if game is over then block 
+        plt.draw()
+        plt.pause(0.01)
+        if done: plt.show(block=True)
 
 
 @dataclass(frozen=True)

@@ -7,5 +7,8 @@ class InvalidNetwork(Exception):
 class InvalidGameState(Exception):
     """Thrown when game state is not valid"""
 
+class InvalidPlayer(Exception):
+    """Thrown when the player is not valid"""
+
 class UnknownGameScore(Exception):
-    """Thrown when game score cannot be compted.s"""
+    """Thrown when game score cannot be computed"""

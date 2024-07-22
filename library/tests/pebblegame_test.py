@@ -25,9 +25,10 @@ class TestGame(unittest.TestCase):
         for i in range(1, 5):
             with open(f"library/tests/test_ras/ra{i}.pickle","rb") as f:
                 ra = pickle.load(f)
-                game_state = AbelardeState(Network(ra, 4)).possible_moves[0].after_state
-                k, m, n = ra.num_units, len(game_state.network.adj), ra.num_atoms
-                self.assertEqual(len(game_state.possible_moves),k*(m**(n-1)))
+                for j in range(2, 4):
+                    game_state = AbelardeState(Network(ra, j)).possible_moves[0].after_state
+                    k, m, n = ra.num_units, len(game_state.network.adj), ra.num_atoms
+                    self.assertEqual(len(game_state.possible_moves),k*(n**(m-1)))
 
     def test_heloise_self_loop(self):
         for i in range(1, 5):
