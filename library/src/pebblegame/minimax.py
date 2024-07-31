@@ -1,11 +1,11 @@
-import pebblegame
 from pebblegame.exceptions import UnknownGameScore
 from pebblegame.models import Character, GameState, Move
 import math
+import random
 
 def find_best_move(game_state : GameState) -> Move | None:
     maximiser = game_state.current_player
-    best_move = None
+    best_moves = []
     best_score = -math.inf
     alpha = -math.inf
     beta = math.inf
@@ -13,10 +13,12 @@ def find_best_move(game_state : GameState) -> Move | None:
     for move in game_state.possible_moves:
         score = minimax(move, maximiser, alpha, beta, depth-1)
         alpha = max(alpha, score)
-        if score >= best_score : 
-            best_move = move
+        if score > best_score : 
+            best_moves = [move]
             best_score = score
-    return best_move
+        elif score == best_score:
+            best_moves.append(move)
+    return random.choice(best_moves)
 
 def minimax(move: Move, maximiser: Character, alpha : int, beta : int, depth : int, maximise: bool = False) -> int:
     if move.after_state.game_over or depth == 0: return evaluate_score(move.after_state, maximiser)

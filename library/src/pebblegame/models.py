@@ -56,6 +56,7 @@ class Network:
         return True
     
     def display(self, done=False):
+        plt.figure(1)
         n = len(self.adj)
         plt.clf()
         G = nx.from_numpy_array(self.adj, create_using=nx.MultiDiGraph)

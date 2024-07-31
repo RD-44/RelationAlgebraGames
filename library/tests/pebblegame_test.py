@@ -3,11 +3,13 @@ from re import L
 import sys
 from tkinter import N
 from pebblegame.models import AbelardeState, HeloiseState, Character,Network
+from pebblegame.pims import construct_networks
 from pebblegame.player import MiniMaxPlayer, RandomPlayer
 import ras.relalg
 sys.modules['relalg'] = ras.relalg
 from pebblegame.engine import PebbleGame
 import unittest
+
 
 class TestGame(unittest.TestCase):
 
@@ -52,6 +54,15 @@ class TestGame(unittest.TestCase):
                     else:
                         self.assertNotEqual(adj[j][game_state.z], -1)
                         self.assertNotEqual(adj[game_state.z][j], -1)
+    
+    def test_construct_networks(self):
+        for i in range(1, 5):
+            with open(f"library/tests/test_ras/ra{i}.pickle","rb") as f:
+                ra = pickle.load(f)
+            for j in range(2, 4):
+                networks = construct_networks(ra, j)
+                self.assertEqual((ra.num_atoms)**((j*(j+1))//2), len(networks))
+                
 
 
 

@@ -1,6 +1,6 @@
 #TODO: Create Abelarde agent first and train against the minimax algorithm
 # Once it's clear that the agent is evolving, do heloise.
-import abc
+from abc import ABC
 import pickle
 from pebblegame.dqn.aiengine import PebbleGameAI
 from ras.relalg import RA
@@ -13,20 +13,33 @@ import numpy as np
 from collections import deque
 from pebblegame.models import AbelardeState, GameState, HeloiseState, Network
 from pebblegame.dqn.model import Linear_QNet, QTrainer
+from pebblegame.dqn.exceptions import UninitialisedAgent
+from matplotlib import pyplot as plt
 
-MAX_MEMORY = 100_000
+MAX_MEMORY = 100000
 BATCH_SIZE = 1000
 LR = 0.001
 
-class Agent(metaclass=abc.ABCMeta):
+class PostInitCaller(type):
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        obj.__post_init__()
+        return obj
+
+class Agent(metaclass=PostInitCaller):
 
     def __init__(self, ra : RA, n : int) -> None:
         self.ra = ra
         self.n = n
         self.n_games = 0 # number of games played
-        self.epsilon = 0 # used to determine exploitation vs exploration
-        self.gamma = 0.8 # discount factor
+        self.epsilon = 0.4 # used to determine exploitation vs exploration
+        self.gamma = 0.9 # discount factor
         self.memory = deque(maxlen=MAX_MEMORY)
+        self.trainer = None # must be initialised in a subclass
+    
+    def __post_init__(self) -> None:
+        if self.trainer is None:
+            raise UninitialisedAgent("trainer is not initialised")
 
     def get_state(self, game : PebbleGameAI) -> np.ndarray:
         return np.ravel(game.game_state.network.adj) # flattens adjacency matrix to 1D array
@@ -44,9 +57,10 @@ class Agent(metaclass=abc.ABCMeta):
         self.trainer.train_step(state, action, reward, next_state, done)
     
     def get_action(self, state, test=False) -> list[int]:
-        self.epsilon = 200 - self.n_games if not test else 0
         final_move = np.zeros((self.num_moves,))
-        if random.randint(0, 200) < self.epsilon:
+        self.epsilon = 0.1#1/(2 + 2*np.log(1+0.1*self.n_games))
+        print(self.epsilon)
+        if np.random.rand() < self.epsilon and not test:
             index = random.randint(0, self.num_moves-1)
             final_move[index] = 1
         else:
@@ -110,10 +124,23 @@ def train(ra : RA, n : int):
             if abelarde_agent.n_games % 10 == 0:
                 abelarde_agent.model.save()
 
-            #plot(plot_scores, plot_mean_scores)
-        
+            plot(plot_scores, plot_mean_scores)
+
+def plot(scores, mean_scores) -> None:
+    plt.figure(2)
+    plt.clf()
+    plt.title('Training...')
+    plt.xlabel('Number of Games')
+    plt.ylabel('Score')
+    plt.plot(scores)
+    plt.plot(mean_scores)
+    plt.ylim(ymin=0)
+    plt.text(len(scores)-1, scores[-1], str(scores[-1]))
+    plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
+    plt.show(block=False)
+    
 
 if __name__ == '__main__':
     with open("library/tests/test_ras/ra4.pickle", "rb") as f:
         ra = pickle.load(f)
-    train(ra, 5)
+    train(ra, 4)

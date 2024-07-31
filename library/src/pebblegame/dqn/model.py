@@ -4,21 +4,24 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-HIDDEN_SIZE = 256
+HIDDEN_SIZE = 512
+
+# TODO: ideas below
+"""Interpret the network using a convolutional neural net, so the matrix structure is recognised"""
 
 class Linear_QNet(nn.Module):
 
     def __init__(self, input_size : int, output_size : int) -> None:
         super().__init__()
         self.linear1 = nn.Linear(input_size, HIDDEN_SIZE)
-        self.linear2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
-        self.linear3 = nn.Linear(HIDDEN_SIZE, output_size)
+        #self.linear2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.linear2 = nn.Linear(HIDDEN_SIZE, output_size)
         self.load()
 
     def forward(self, x):
         x = F.relu(self.linear1(x))
-        x = F.sigmoid(self.linear2(x))
-        x = self.linear3(x)
+        x = self.linear2(x)
+        #x = self.linear3(x)
         return x
 
     def save(self, file_name='model.pth'):
@@ -40,7 +43,7 @@ class QTrainer():
         self.lr = lr
         self.model = model
         self.gamma = gamma
-        self.optimiser = optim.Adam(model.parameters(), lr=self.lr)
+        self.optimiser = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
         self.criterion = nn.MSELoss()
 
     def train_step(self, state, action, reward, next_state, done):
