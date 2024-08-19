@@ -21,7 +21,7 @@ def find_best_move(game_state : GameState) -> Move | None:
     return random.choice(best_moves)
 
 def minimax(move: Move, maximiser: Character, alpha : int, beta : int, depth : int, maximise: bool = False) -> int:
-    if move.after_state.game_over or depth == 0: return evaluate_score(move.after_state, maximiser)
+    if move.after_state.done or depth == 0: return evaluate_score(move.after_state, maximiser)
     best_score = 0
     if maximise:
         best_score = -math.inf
@@ -42,7 +42,7 @@ def minimax(move: Move, maximiser: Character, alpha : int, beta : int, depth : i
     return best_score
     
 def evaluate_score(game_state: GameState, maximiser: Character):
-    if not game_state.game_over:
+    if not game_state.done:
         # heuristic
         #print("Heuristic Evaluated at: ", game_state.current_player.value)
         score = 0

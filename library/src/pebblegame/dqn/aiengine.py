@@ -6,8 +6,6 @@ from ras.relalg import RA
 from pebblegame.player import MiniMaxPlayer
 import numpy as np
 
-from pebblegame.player import ConsolePlayer
-
 class PebbleGameAI:
 
     def __init__(self, ra : RA, n : int) -> None:
@@ -15,56 +13,68 @@ class PebbleGameAI:
         self.n = n
         self.rounds = 0
         self.game_state = AbelardeState(Network(ra, n))
-        print(self.game_state.current_player)
-        self.heloise_player = MiniMaxPlayer(Character.HELOISE, delay_seconds=0)
-        self.last_move_number = -1 
+        self.num_games = 1
+        self.last_action = -1 
     
     def reset(self) -> None:
         self.game_state = AbelardeState(Network(self.ra, self.n))
         self.rounds = 0
+        self.num_games += 1
 
-    def play_abelarde_step(self, action) -> tuple[int, int, int]:
+    def play_abelarde_step(self, action) -> tuple[int, int]:
+        self.game_state.network.display()
+        self.rounds += 1
+        if not self.game_state.current_player is Character.ABELARDE :
+            raise InvalidPlayer("Player is not Abelarde.")
+        #time.sleep(1)
+        if action == self.last_action: # discourage playing the same move played in the last round
+            return -5, True
+            # variance of last n moves
+        self.last_action = action
+        
+        self.game_state = self.game_state.possible_moves[action].after_state
+        reward = 0
+        if self.game_state.done:
+            # if game is over after abelarde's turn, he loses due to invalid move
+            reward = -10
+        return reward, self.game_state.done
+    
+    def play_abelarde_single(self, action) -> tuple[int, int]:
         self.game_state.network.display()
         self.rounds += 1
         if not self.game_state.current_player is Character.ABELARDE :
             raise InvalidPlayer("Player is not Abelarde.")
         self.game_state.network.display()
-        #time.sleep(1)
-        move_number = np.argmax(action)
-        if move_number == self.last_move_number: # discourage playing the same move played in the last round
-            return -50, True, self.rounds
-        self.last_move_number = move_number
+        # if move_number == self.last_move_number: # discourage playing the same move played in the last round
+        #     return -5, True
+        self.last_action = action
         
-        self.game_state = self.game_state.possible_moves[move_number].after_state
+        self.game_state = self.game_state.possible_moves[action].after_state
         reward = 0
-        if self.game_state.game_over:
+        if self.game_state.done:
             # if game is over after abelarde's turn, he loses due to invalid move
-            reward = -50
+            reward = -100
         else:
             #print(f"Abelarde picked {(self.game_state.x, self.game_state.y, self.game_state.z, self.game_state.network.adj[self.game_state.x][self.game_state.z], self.game_state.network.adj[self.game_state.z][self.game_state.y])}")
+            self.game_state = MiniMaxPlayer(Character.HELOISE).get_move(self.game_state).after_state
             self.game_state.network.display()
-            self.game_state = self.heloise_player.get_move(self.game_state).after_state
-            self.game_state.network.display()
-            #time.sleep(1)
-            if self.game_state.game_over: # here abelarde wins
+            if self.game_state.done: # here abelarde wins
                 print("A won.")
-                reward = 30
+                reward = 3
             else:
-                reward = -20
-        return reward, self.game_state.game_over, self.rounds
+                reward = -self.rounds
+        return reward, self.game_state.done
         
         
-    # def play_heloise_step(self, action) -> tuple[int, int, int]:
-    #     if self.game_state.current_player is not Character.ABELARDE :
-    #         raise InvalidPlayer("Player is not Abelarde.")
-    #     self.game_state = self.game_state.possible_moves[np.argmax(action)].after_state
-    #     reward = 0
-    #     if self.game_state.game_over:
-    #         if self.game_state.winner is Character.HELOISE:
-    #             reward = 10
-    #         else:
-    #             reward = -10
-    #     else:
-    #         reward = 5
-    #     return reward, self.game_state.game_over, self.rounds
+    def play_heloise_step(self, action) -> tuple[int, int, int]:
+        self.game_state.network.display()
+        if self.game_state.current_player is not Character.HELOISE :
+            raise InvalidPlayer("Player is not Heloise.")
+        self.game_state = self.game_state.possible_moves[action].after_state
+        reward = 0
+        if self.game_state.done: # game ends after heloise moves only if she plays wrong move
+            reward = -10
+        else:
+            reward = 5
+        return reward, self.game_state.done
 

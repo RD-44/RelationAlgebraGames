@@ -1,2 +1,2 @@
 class UninitialisedAgent(Exception):
-    """Thrown when Agent is not correclty initialised"""
+    """Thrown when Agent is not correctlsy initialised"""

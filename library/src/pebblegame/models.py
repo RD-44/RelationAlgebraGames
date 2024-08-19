@@ -80,8 +80,8 @@ class GameState(metaclass=abc.ABCMeta):
     network : Network
 
     @cached_property
-    def game_over(self) -> bool:
-        return self.winner is not None
+    def done(self) -> int:
+        return 1 if self.winner is not None else 0
 
     @abc.abstractmethod
     def winner(self) -> Character | None:
@@ -153,7 +153,7 @@ class HeloiseState(GameState):
         return Character.HELOISE
 
     @cached_property
-    def game_over(self) -> bool:
+    def done(self) -> bool:
         return self.winner is not None
 
     @cached_property

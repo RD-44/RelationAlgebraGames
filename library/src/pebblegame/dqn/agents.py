@@ -1,26 +1,18 @@
-#TODO: Create Abelarde agent first and train against the minimax algorithm
-# Once it's clear that the agent is evolving, do heloise.
-from abc import ABC
-import pickle
 from pebblegame.dqn.aiengine import PebbleGameAI
 from ras.relalg import RA
-import sys
-import ras
-sys.modules['relalg'] = ras.relalg
 import torch
 import random
 import numpy as np
 from collections import deque
-from pebblegame.models import AbelardeState, GameState, HeloiseState, Network
-from pebblegame.dqn.model import Linear_QNet, QTrainer
+from pebblegame.dqn.model import DQN, DoubleQTrainer, QTrainer
 from pebblegame.dqn.exceptions import UninitialisedAgent
-from matplotlib import pyplot as plt
 
 MAX_MEMORY = 100000
 BATCH_SIZE = 1000
 LR = 0.001
 
 class PostInitCaller(type):
+    # used to ensure that postinit is called in the Agent class
     def __call__(cls, *args, **kwargs):
         obj = type.__call__(cls, *args, **kwargs)
         obj.__post_init__()
@@ -31,10 +23,9 @@ class Agent(metaclass=PostInitCaller):
     def __init__(self, ra : RA, n : int) -> None:
         self.ra = ra
         self.n = n
-        self.n_games = 0 # number of games played
-        self.epsilon = 0.4 # used to determine exploitation vs exploration
+        self.epsilon = 0.5 # determines exploitation vs exploration
         self.gamma = 0.9 # discount factor
-        self.memory = deque(maxlen=MAX_MEMORY)
+        self.memory = deque(maxlen=MAX_MEMORY) # replay buffer
         self.trainer = None # must be initialised in a subclass
     
     def __post_init__(self) -> None:
@@ -54,93 +45,44 @@ class Agent(metaclass=PostInitCaller):
         self.trainer.train_step(np.array(states), np.array(actions), np.array(rewards), np.array(next_states), np.array(dones))
 
     def train_short_memory(self, state, action, reward, next_state, done) -> None:
-        self.trainer.train_step(state, action, reward, next_state, done)
+        self.trainer.train_step(np.array([state]), np.array([action]), np.array([reward]), np.array([next_state]), np.array([done]))
     
-    def get_action(self, state, test=False) -> list[int]:
-        final_move = np.zeros((self.num_moves,))
-        self.epsilon = 0.1#1/(2 + 2*np.log(1+0.1*self.n_games))
-        print(self.epsilon)
+    def get_action(self, state, test=False) -> int:
+        self.epsilon = 1/(2 + 2*np.log(1+0.1*len(self.memory)))
         if np.random.rand() < self.epsilon and not test:
-            index = random.randint(0, self.num_moves-1)
-            final_move[index] = 1
-        else:
-            state0 = torch.tensor(state, dtype=torch.float)
-            prediction = self.model(state0)
-            move = torch.argmax(prediction).item()
-            final_move[move] = 1
-        return final_move
+            return random.randint(0, self.num_moves-1)
+        prediction = self.model(torch.tensor(state, dtype=torch.float))
+        return torch.argmax(prediction).item()
 
 class AbelardeAgent(Agent):
 
-    def __init__(self, ra : RA, n : int) -> None:
+    def __init__(self, ra : RA, n : int, name : str) -> None:
         super().__init__(ra, n)
         self.num_moves = n*((n-1)**2)*(ra.num_atoms**2)
-        self.model = Linear_QNet(n*n, self.num_moves) 
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        # self.trainer = QTrainer(model=self.model, lr=LR, gamma=self.gamma)
+        self.model = DQN(input_size=n*n, output_size=self.num_moves, name=name) 
+        self.target_model = DQN(input_size=n*n, output_size=self.num_moves, name=name+'_target')
+        for target_param, param in zip(self.model.parameters(), self.target_model.parameters()):
+            target_param.data.copy_(param)
+        self.trainer = DoubleQTrainer(model=self.model, target_model=self.target_model, lr=LR, gamma=self.gamma)
+    
+    def get_action(self, state, test=False) -> int:
+        self.epsilon = 1/(2 + 2*np.log(1+0.1*len(self.memory)))
+        if np.random.rand() < self.epsilon and not test:
+            return random.randint(0, self.num_moves-1)
+        prediction = self.target_model(torch.tensor(state, dtype=torch.float))
+        return torch.argmax(prediction).item()
+
+    def save(self) -> None:
+        self.model.save()
+        self.target_model.save()
+
     
 class HeloiseAgent(Agent):
 
-    def __init__(self, ra : RA, n : int) -> None:
+    def __init__(self, ra : RA, n : int, name : str) -> None:
         super().__init__(ra, n)
-        self.model = Linear_QNet(n*n, ra.num_units*(ra.num_atoms**(n-1)))
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.num_moves = ra.num_units*(ra.num_atoms**(n-1))
+        self.model = DQN(input_size=n*n, output_size=self.num_moves, name=name)
+        self.trainer = QTrainer(model=self.model, lr=LR, gamma=self.gamma)
     
-        
-def train(ra : RA, n : int):
-    plot_scores = []
-    plot_mean_scores = []
-    total_score = 0
-    record = 0
-    abelarde_agent = AbelardeAgent(ra, n)
-    game = PebbleGameAI(ra, n)
-
-    while True:
-        # get old state 
-        state_old = abelarde_agent.get_state(game)
-        # get move based on current state
-        action = abelarde_agent.get_action(state_old)
-        # do the move and get new state
-        reward, done, score = game.play_abelarde_step(action)
-        state_new = abelarde_agent.get_state(game)
-        abelarde_agent.train_short_memory(state_old, action, reward, state_new, done)
-        abelarde_agent.remember(state_old, action, reward, state_new, done)
-
-        if done:
-            # experienced replay - train again on ALL previous moves to improve 
-            game.reset()
-            abelarde_agent.n_games += 1
-            abelarde_agent.train_long_memory()
-
-            if score > record:
-                record = score
-                # agent.model.save
-
-            print('Game', abelarde_agent.n_games, 'Score', score, 'Record', record)
-
-            plot_scores.append(score)
-            total_score += score
-            plot_mean_scores.append(total_score/abelarde_agent.n_games)
-
-            if abelarde_agent.n_games % 10 == 0:
-                abelarde_agent.model.save()
-
-            plot(plot_scores, plot_mean_scores)
-
-def plot(scores, mean_scores) -> None:
-    plt.figure(2)
-    plt.clf()
-    plt.title('Training...')
-    plt.xlabel('Number of Games')
-    plt.ylabel('Score')
-    plt.plot(scores)
-    plt.plot(mean_scores)
-    plt.ylim(ymin=0)
-    plt.text(len(scores)-1, scores[-1], str(scores[-1]))
-    plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
-    plt.show(block=False)
-    
-
-if __name__ == '__main__':
-    with open("library/tests/test_ras/ra4.pickle", "rb") as f:
-        ra = pickle.load(f)
-    train(ra, 4)

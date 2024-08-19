@@ -24,10 +24,10 @@ class PebbleGame:
         
         while rounds>0: 
             if self.renderer is not None : self.renderer.renderabelarde(game_state)
-            if game_state.game_over: return game_state.winner
+            if game_state.done: return game_state.winner
             game_state = self.player1.make_move(game_state)
             if self.renderer is not None : self.renderer.renderheloise(game_state)
-            if game_state.game_over: return game_state.winner
+            if game_state.done: return game_state.winner
             game_state = self.player2.make_move(game_state)
             rounds -= 1
             print(rounds)
