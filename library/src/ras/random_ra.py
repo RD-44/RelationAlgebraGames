@@ -13,7 +13,7 @@ def peircean(triple, converse): # returns a set of all peircean transforms of a 
         (converse[c], converse[b], converse[a])
         ])
 
-def generate(num_units, num_divs): # random RA generator
+def generate(num_units, num_divs): # random NA generator
     num_atoms = num_units + num_divs 
     num_converse_pairs = random.randint(0, num_divs//2)
     num_symmetric = num_divs - 2*num_converse_pairs
@@ -21,8 +21,8 @@ def generate(num_units, num_divs): # random RA generator
     isunit = lambda x : 0 <= x < num_units # predicate to check if number corresponds to unit
     diversity = lambda i : i + num_units
 
-    # these dictionaries store start and end of each diversity atom. If d = e_0 ; d : e_1 then starts[d] = e_0
-    start = {i : i for i in range(num_units)} 
+    # these dictionaries store start and end of each diversity atom. If d = e_0 ; d ; e_1 then starts[d] = e_0
+    start = {i : i for i in range(num_units)} # initially we only know that for each unit, its start and end is the same unit
     end = {i : i for i in range(num_units)} 
     converse = {i : i for i in range(num_units)}
     # choose random start and end for diversity atons
@@ -38,25 +38,18 @@ def generate(num_units, num_divs): # random RA generator
         end[diversity(i)] = start[diversity(i)]
         converse[diversity(i)] = diversity(i)
         
-    illegal = set() # stores at least one triple from each forbidden peircean set
     legal = set() # stores peircean sets of triples that must be consistent
-    options = set() # stores peircean sets of triples that we are free to forbid or allow
     
     for a, b, c in it.product(range(num_atoms), repeat=3): # iterate through all triples
         if start[a] != end[c] or end[b] != start[c] or end[a] != start[b]:
-            illegal.add((a, b, c))
-        elif isunit(a): 
-            if start[b] != a or b != converse[c]:
-                illegal.add((a, b, c))
-            else:
+            continue
+        if isunit(a):
+            if start[b] == a and b == converse[c]: 
                 legal.add(frozenset(peircean((a, b, c), converse)))
         elif not isunit(b) and not isunit(c): # adds options for not illegal triples that don't involve units
-            options.add(frozenset(peircean((a, b, c), converse)))
+            if random.choice([True, False]):
+                legal.add(frozenset(peircean((a, b, c), converse)))
     
-    for l in options: 
-        if random.choice([True, False]): # randomly choose peircan sets of triples to make consistent
-            legal.add(l)
-
     return RA(num_symmetric, num_units, converse, legal)
 
 def nextRA(associativity=True, num_units=random.randint(1, 3), num_divs=random.randint(1, 5)):

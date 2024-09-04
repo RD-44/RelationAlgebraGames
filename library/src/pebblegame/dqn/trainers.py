@@ -30,7 +30,7 @@ def train_both(ra : RA, n : int, name_abelarde : str, name_heloise : str):
         reward_abelarde, done_abelarde = game.play_abelarde_step(action_abelarde)
         state_new_abelarde = abelarde_agent.get_state(game)
 
-        #TODO: DO NOT train or remember once both players have moved!!
+        #TODO: DO NOT train or remember until both players have moved!!
         # if abelarde plays wrong, punish and restart. else, let heloise move. 
         # if heloise plays wrong, punish her and reward abelarde. else, reward her and punish abelarde
         # must implement the play heloise step in pebblegameai
@@ -84,17 +84,17 @@ def train_abelarde(ra : RA, n : int, name):
     plot_mean_scores = []
     total_score = 0
     record = 0
-    abelarde_agent = AbelardeAgent(ra, n, name)
     game = PebbleGameAI(ra, n)
+    abelarde_agent = AbelardeAgent(game, name)
 
     while True:
         # get old state 
-        state_old = abelarde_agent.get_state(game)
+        state_old = abelarde_agent.get_state()
         # get move based on current state
-        action = abelarde_agent.get_action(state_old)
+        action = abelarde_agent.get_action()
         # do the move and get new state
         reward, done = game.play_abelarde_single(action)
-        state_new = abelarde_agent.get_state(game)
+        state_new = abelarde_agent.get_state()
         abelarde_agent.train_short_memory(state_old, action, reward, state_new, done)
         abelarde_agent.remember(state_old, action, reward, state_new, done)
 
@@ -120,4 +120,4 @@ def train_abelarde(ra : RA, n : int, name):
 if __name__ == '__main__':
     with open("library/tests/test_ras/ra4.pickle", "rb") as f:
         ra = pickle.load(f)
-    train_abelarde(ra, 5, 'mckenzie_5A')
+    train_abelarde(ra, 5, 'ra4_5A')

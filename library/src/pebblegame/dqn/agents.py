@@ -1,4 +1,5 @@
 from pebblegame.dqn.aiengine import PebbleGameAI
+from pebblegame.models import GameState
 from ras.relalg import RA
 import torch
 import random
@@ -11,6 +12,8 @@ MAX_MEMORY = 100000
 BATCH_SIZE = 1000
 LR = 0.001
 
+#TODO: USE MASKING TO SPEED UP TRAINING!!
+
 class PostInitCaller(type):
     # used to ensure that postinit is called in the Agent class
     def __call__(cls, *args, **kwargs):
@@ -20,10 +23,8 @@ class PostInitCaller(type):
 
 class Agent(metaclass=PostInitCaller):
 
-    def __init__(self, ra : RA, n : int) -> None:
-        self.ra = ra
-        self.n = n
-        self.epsilon = 0.5 # determines exploitation vs exploration
+    def __init__(self, game : PebbleGameAI) -> None:
+        self.game = game
         self.gamma = 0.9 # discount factor
         self.memory = deque(maxlen=MAX_MEMORY) # replay buffer
         self.trainer = None # must be initialised in a subclass
@@ -32,8 +33,8 @@ class Agent(metaclass=PostInitCaller):
         if self.trainer is None:
             raise UninitialisedAgent("trainer is not initialised")
 
-    def get_state(self, game : PebbleGameAI) -> np.ndarray:
-        return np.ravel(game.game_state.network.adj) # flattens adjacency matrix to 1D array
+    def get_state(self) -> np.ndarray:
+        return np.ravel(self.game.game_state.network.adj) # flattens adjacency matrix to 1D array
         
     def remember(self, state, action, reward, next_state, done) -> None:
         self.memory.append((state, action, reward, next_state, done)) 
@@ -53,25 +54,38 @@ class Agent(metaclass=PostInitCaller):
             return random.randint(0, self.num_moves-1)
         prediction = self.model(torch.tensor(state, dtype=torch.float))
         return torch.argmax(prediction).item()
+    
+    def _get_mask(self, game_state : GameState):
+        pass
+
 
 class AbelardeAgent(Agent):
 
-    def __init__(self, ra : RA, n : int, name : str) -> None:
-        super().__init__(ra, n)
-        self.num_moves = n*((n-1)**2)*(ra.num_atoms**2)
+    def __init__(self, game : PebbleGameAI, name : str) -> None:
+        super().__init__(game=game)
+        self.num_moves = game.n*((game.n-1)**2)*(game.ra.num_atoms**2)
         # self.trainer = QTrainer(model=self.model, lr=LR, gamma=self.gamma)
-        self.model = DQN(input_size=n*n, output_size=self.num_moves, name=name) 
-        self.target_model = DQN(input_size=n*n, output_size=self.num_moves, name=name+'_target')
+        self.model = DQN(input_size=game.n**2, output_size=self.num_moves, name=name) 
+        self.target_model = DQN(input_size=game.n**2, output_size=self.num_moves, name=name+'_target')
         for target_param, param in zip(self.model.parameters(), self.target_model.parameters()):
             target_param.data.copy_(param)
         self.trainer = DoubleQTrainer(model=self.model, target_model=self.target_model, lr=LR, gamma=self.gamma)
     
-    def get_action(self, state, test=False) -> int:
-        self.epsilon = 1/(2 + 2*np.log(1+0.1*len(self.memory)))
-        if np.random.rand() < self.epsilon and not test:
-            return random.randint(0, self.num_moves-1)
+    def get_action(self) -> int:
+        state = self.get_state()
+        epsilon = 1/(2 + 2*np.log(1+0.1*self.game.num_games)) # determines exploitation vs exploration
+        valid_moves_mask = torch.zeros(self.num_moves, dtype=torch.bool)
+        for i in range(self.num_moves):
+            valid_moves_mask[i] = self.game.game_state.possible_moves[i].after_state.done == 0
+
+        if np.random.rand() < epsilon:
+            valid_indices = torch.nonzero(valid_moves_mask).squeeze()
+            return valid_indices[torch.randint(0, len(valid_indices), (1,))].item()
+        
         prediction = self.target_model(torch.tensor(state, dtype=torch.float))
-        return torch.argmax(prediction).item()
+        masked_q_values = torch.where(valid_moves_mask, prediction, torch.tensor(-float('inf')))
+
+        return torch.argmax(masked_q_values).item()
 
     def save(self) -> None:
         self.model.save()
@@ -80,9 +94,10 @@ class AbelardeAgent(Agent):
     
 class HeloiseAgent(Agent):
 
-    def __init__(self, ra : RA, n : int, name : str) -> None:
-        super().__init__(ra, n)
-        self.num_moves = ra.num_units*(ra.num_atoms**(n-1))
-        self.model = DQN(input_size=n*n, output_size=self.num_moves, name=name)
+    def __init__(self, game : PebbleGameAI, name : str) -> None:
+        super().__init__(game=game)
+        self.num_moves = game.ra.num_units*(game.ra.num_atoms**(game.n-1))
+        self.model = DQN(input_size=game.n**2, output_size=self.num_moves, name=name)
         self.trainer = QTrainer(model=self.model, lr=LR, gamma=self.gamma)
-    
+   
+ 

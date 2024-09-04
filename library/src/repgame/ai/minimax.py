@@ -9,7 +9,7 @@ def find_best_move(game_state : GameState) -> Move | None:
     best_score = -math.inf
     alpha = -math.inf
     beta = math.inf
-    depth = 1 if maximiser is Character.ABELARDE else 2
+    depth = 3
     for move in game_state.possible_moves:
         score = minimax(move, maximiser, alpha, beta, depth-1)
         alpha = max(alpha, score)
@@ -20,7 +20,6 @@ def find_best_move(game_state : GameState) -> Move | None:
 
 def minimax(move: Move, maximiser: Character, alpha : int, beta : int, depth : int, maximise: bool = False) -> int:
     if move.after_state.game_over or depth == 0: return evaluate_score(move.after_state, maximiser)
-    best_score = 0
     if maximise:
         best_score = -math.inf
         for next_move in move.after_state.possible_moves:
@@ -36,21 +35,16 @@ def minimax(move: Move, maximiser: Character, alpha : int, beta : int, depth : i
             best_score = min(score, best_score)
             if score <= alpha : break
             beta = min(beta, score)
+        return best_score
     # print("Maximiser:", maximiser, "Move:", move, " Score:", score)
-    return best_score
+        
     
 def evaluate_score(game_state: GameState, maximiser: Character):
-    if not game_state.game_over:
-        # heuristic
-        #print("Heuristic Evaluated at: ", game_state.current_player.value)
-        score = heloise_moves(game_state, maximiser)
-        #print(score)
-        return score
-    elif game_state.winner is maximiser:
-        return math.inf
+    if game_state.current_player is maximiser:
+        return len(game_state.possible_moves)
     else:
-        return -math.inf
-
+        return -len(game_state.possible_moves)
+    
 # Heuristics 
 def freqs_squared(game_state : GameState, maximiser : Character):
     score = 0

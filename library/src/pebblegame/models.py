@@ -79,21 +79,31 @@ class Network:
 class GameState(metaclass=abc.ABCMeta):
     network : Network
 
-    @cached_property
-    def done(self) -> int:
-        return 1 if self.winner is not None else 0
-
-    @abc.abstractmethod
-    def winner(self) -> Character | None:
-        """Get winner of current round if there is a winner"""
-
     @abc.abstractmethod
     def possible_moves(self) -> list[Move]:
         """Return possible moves"""
 
-    @abc.abstractmethod 
+    @abc.abstractmethod
     def current_player(self) -> Character:
         """Return current player"""
+    
+    @cached_property
+    def done(self) -> int:
+        return 1 if self.winner is not None else 0
+
+    @cached_property
+    def winner(self) -> Character | None:
+        if not self.legal_moves:
+            return self.current_player.other
+        return None
+
+    @cached_property
+    def legal_moves(self) -> list[Move]:
+        moves = []
+        for move in self.possible_moves:
+            if not move.after_state.done:
+                moves.append(move)
+        return moves
 
 @dataclass(frozen=True)
 class AbelardeState(GameState):

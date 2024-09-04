@@ -24,13 +24,14 @@ def sample(count, num_divs, quiet=True):
 
 
 limit = 20
+start = 1
 ys = []
-for i in range(10, limit + 1):
+for i in range(start, limit + 1):
     print(i)
     associative_count = sample(100, i)
     ys.append(associative_count)
 
-xs = range(10, limit + 1)
+xs = range(start, limit + 1)
 print(ys)
 plt.plot(xs, ys)
 plt.show()

@@ -2,7 +2,7 @@ from ras.random_ra import nextRA
 import pickle
 
 while True:
-    ra = nextRA(num_units=1, num_divs=5, associativity=True)
+    ra = nextRA(num_units=1, num_divs=2, associativity=True)
     print(ra)
     print("Associative:", ra.is_associative)
     ans = input("Save ra? (y = yes, n = no, q = quit) \n")

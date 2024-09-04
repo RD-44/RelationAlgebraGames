@@ -1,5 +1,6 @@
 import pickle
 import sys
+from ras import random_ra
 from repgame.models import Character
 from repgame.player import MiniMaxPlayer, RandomPlayer
 import ras.relalg
@@ -8,7 +9,7 @@ from repgameconsole.players import ConsolePlayer
 from repgameconsole.renderers import ConsoleRenderer
 from repgame.engine import RepresentationGame
 
-with open("library/tests/test_rras/ra1.pickle", "rb") as f:
+with open("library/tests/test_ras/ra2.pickle", "rb") as f:
     ra = pickle.load(f)
 
 # FOR TESTING:
@@ -29,7 +30,7 @@ from pebblegame.models import Network
 # for move in h.possible_moves:
 #     print(move.after_state.network.adj)
 
-p1, p2 = MiniMaxPlayer(Character.ABELARDE, 1), MiniMaxPlayer(Character.HELOISE, 1)
+p1, p2 = MiniMaxPlayer(Character.ABELARDE), MiniMaxPlayer(Character.HELOISE)
 renderer = ConsoleRenderer()
 winner = RepresentationGame(p1, p2, ra, renderer).play()
 

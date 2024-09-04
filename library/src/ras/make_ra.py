@@ -41,17 +41,14 @@ def create(num_units : int | None = None, num_divs : int | None = None) -> RA:
         start[diversity(i)] = toint(input(f"Enter start for {tochar[i]}")) if num_units > 1 else 0
         end[diversity(i)] = start[diversity(i)]
 
-    illegal = set() # stores at least one triple from each forbidden peircean set
     legal = set() # stores peircean sets of triples that must be consistent
     options = set() # stores peircean sets of triples that we are free to forbid or allow
 
     for a, b, c in it.product(range(num_atoms), repeat=3): # iterate through all triples
         if start[a] != end[c] or end[b] != start[c] or end[a] != start[b]:
-            illegal.add((a, b, c))
-        elif isunit(a): 
-            if start[b] != a or b != converse[c]:
-                illegal.add((a, b, c))
-            else:
+            continue
+        if isunit(a): 
+            if start[b] == a and b == converse[c]:
                 legal.add(frozenset(peircean((a, b, c), converse)))
         elif not isunit(b) and not isunit(c): # adds options for not illegal triples that don't involve units
             options.add(frozenset(peircean((a, b, c), converse)))
